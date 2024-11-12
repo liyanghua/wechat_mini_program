@@ -1,0 +1,70 @@
+/* customize.wxss */
+.customize-container {
+  padding: 20rpx;
+}
+
+.product-preview {
+  background: #fff;
+  padding: 20rpx;
+  border-radius: 10rpx;
+  margin-bottom: 20rpx;
+  position: relative;
+  height: 400rpx;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+}
+
+.custom-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.custom-image {
+  width: 200rpx;
+  height: 200rpx;
+}
+
+.custom-text {
+  font-size: 28rpx;
+  color: #333;
+  margin-top: 10rpx;
+}
+
+.customize-options {
+  background: #fff;
+  padding: 20rpx;
+  border-radius: 10rpx;
+}
+
+.upload-btn {
+  background: #07c160;
+  color: #fff;
+  margin-bottom: 20rpx;
+}
+
+.image-preview {
+  width: 200rpx;
+  height: 200rpx;
+  margin: 20rpx auto;
+}
+
+.text-input {
+  width: 100%;
+  height: 200rpx;
+  border: 1rpx solid #eee;
+  border-radius: 10rpx;
+  padding: 20rpx;
+  margin: 20rpx 0;
+}
+
+.submit-btn {
+  background: #07c160;
+  color: #fff;
+  margin-top: 40rpx;
+}

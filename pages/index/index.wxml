@@ -1,0 +1,44 @@
+<!-- pages/index/index.wxml -->
+<view class="container">
+  <!-- 商品列表 -->
+  <view class="product-list">
+    <view class="product-item" 
+          wx:for="{{products}}" 
+          wx:key="id"
+          bindtap="goToCustomize"
+          data-id="{{item.id}}">
+      <!-- 商品图片 -->
+      <image src="{{item.image}}" 
+             mode="widthFix" 
+             class="product-image"
+             lazy-load />
+      
+      <!-- 商品信息 -->
+      <view class="product-info">
+        <view class="product-name">{{item.name}}</view>
+        <view class="product-desc">{{item.desc}}</view>
+        <view class="product-bottom">
+          <view class="price-container">
+            <text class="price-symbol">¥</text>
+            <text class="price-value">{{item.price}}</text>
+          </view>
+          <view class="sales-count">已售{{item.sales}}</view>
+        </view>
+        <button class="customize-btn" catchtap="goToCustomize" data-id="{{item.id}}">
+          立即定制
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载更多 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-icon"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+  
+  <!-- 无更多数据 -->
+  <view class="no-more" wx:if="{{!hasMore && products.length > 0}}">
+    没有更多商品啦
+  </view>
+</view>
