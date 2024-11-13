@@ -131,8 +131,20 @@ Page({
   // 跳转到定制页面
   goToCustomize(e) {
     const { id } = e.currentTarget.dataset
+    const product = this.data.products.find(p => p.id === id)
+    
+    // 将商品信息序列化后传递
+    const productInfo = JSON.stringify({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      originalImage: product.originalImage,
+      maskImage: product.maskImage,
+      printArea: product.printArea
+    })
+    
     wx.navigateTo({
-      url: `/pages/customize/customize?id=${id}`
+      url: `/pages/customize/customize?productInfo=${encodeURIComponent(productInfo)}`
     })
   }
 })
