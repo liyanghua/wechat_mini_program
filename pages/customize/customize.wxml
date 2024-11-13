@@ -1,57 +1,109 @@
 <!-- pages/customize/customize.wxml -->
 <view class="container">
-  <!-- 预览区域 -->
-  <view class="preview-container">
-    <!-- 隐藏的canvas用于图片处理 -->
-    <canvas
-      canvas-id="customCanvas"
-      style="width:{{canvasWidth}}px; height:{{canvasHeight}}px;"
-      class="hidden-canvas">
-    </canvas>
+  <!-- 调试信息显示 -->
+  <view class="debug-info">
+    <text class="debug-text">调试信息：{{debugText}}</text>
     
-    <!-- 预览图片 -->
-    <view class="preview-section">
-      <image 
-        wx:if="{{previewImage}}"
-        src="{{previewImage}}"
-        mode="aspectFit"
-        class="preview-image"
-        bindtap="previewImage"
-      />
-      <image 
-        wx:else
-        src="{{product.originalImage}}"
-        mode="aspectFit"
-        class="preview-image"
-      />
+    <!-- 原图信息 -->
+    <view wx:if="{{imageInfo}}" class="image-info">
+      <text class="info-title">原图信息:</text>
+      <text>尺寸: {{imageInfo.width}} x {{imageInfo.height}}</text>
+      <text>路径: {{product.originalImage}}</text>
+    </view>
+    
+    <!-- 上传图片信息 -->
+    <view wx:if="{{uploadedImageInfo}}" class="image-info">
+      <text class="info-title">上传图片信息:</text>
+      <text>原始尺寸: {{uploadedImageInfo.width}} x {{uploadedImageInfo.height}}</text>
+      <text wx:if="{{uploadedImageInfo.drawParams}}">绘制位置: ({{uploadedImageInfo.drawParams.x}}, {{uploadedImageInfo.drawParams.y}})</text>
+      <text wx:if="{{uploadedImageInfo.drawParams}}">绘制尺寸: {{uploadedImageInfo.drawParams.width}} x {{uploadedImageInfo.drawParams.height}}</text>
     </view>
   </view>
 
-  <!-- 操作区域 -->
+  <!-- Canvas区域 -->
+  <view class="canvas-container">
+    <canvas 
+      type="2d" 
+      id="customCanvas"
+      style="width: {{canvasWidth}}px; height: {{canvasHeight}}px;"
+    ></canvas>
+  </view>
+
+  <!-- 调试图片显示 -->
+  <view class="debug-images" wx:if="{{debugImages}}">
+    <text class="debug-title">处理过程预览：</text>
+    
+    <!-- 平铺图片 -->
+    <view class="debug-image-item" wx:if="{{debugImages.tiledImage}}">
+      <text class="step-title">1. 平铺后的用户图片：</text>
+      <image 
+        src="{{debugImages.tiledImage}}" 
+        mode="aspectFit" 
+        class="debug-image"
+      ></image>
+    </view>
+
+    <!-- 蒙版效果 -->
+    <view class="debug-image-item" wx:if="{{debugImages.maskedImage}}">
+      <text class="step-title">2. 应用蒙版后：</text>
+      <image 
+        src="{{debugImages.maskedImage}}" 
+        mode="aspectFit" 
+        class="debug-image"
+      ></image>
+    </view>
+
+    <!-- 原图底图 -->
+    <view class="debug-image-item" wx:if="{{debugImages.originalBase}}">
+      <text class="step-title">3. 原图底图：</text>
+      <image 
+        src="{{debugImages.originalBase}}" 
+        mode="aspectFit" 
+        class="debug-image"
+      ></image>
+    </view>
+
+    <!-- 最终效果 -->
+    <view class="debug-image-item" wx:if="{{debugImages.finalResult}}">
+      <text class="step-title">4. 最终合成效果：</text>
+      <image 
+        src="{{debugImages.finalResult}}" 
+        mode="aspectFit" 
+        class="debug-image"
+      ></image>
+    </view>
+  </view>
+
+  <!-- 上传图片预览 -->
+  <view class="upload-preview" wx:if="{{uploadedImage}}">
+    <view class="preview-header">
+      <text class="preview-title">上传图片预览</text>
+      <text class="reset-btn" bindtap="resetUploadedImage">重置</text>
+    </view>
+    <image 
+      src="{{uploadedImage}}" 
+      mode="aspectFit" 
+      style="width: 100%; height: {{canvasHeight/2}}px;"
+    ></image>
+  </view>
+
+  <!-- 操作按钮 -->
   <view class="action-section">
-    <view class="product-info">
-      <text class="product-name">{{product.name}}</text>
-      <text class="product-price">¥{{product.price}}</text>
-    </view>
-
-    <view class="upload-section">
-      <button 
-        class="upload-btn {{imageLoading ? 'loading' : ''}}" 
-        bindtap="chooseImage"
-        disabled="{{imageLoading}}"
-      >
-        {{imageLoading ? '处理中...' : '上传定制图片'}}
-      </button>
-      <text class="upload-tip">建议使用清晰的方形图片，避免图片被拉伸</text>
-    </view>
-
-    <block wx:if="{{customImage}}">
-      <button 
-        class="confirm-btn" 
-        bindtap="confirmDesign"
-      >
-        确认定制
-      </button>
-    </block>
+    <button 
+      class="upload-btn {{loading ? 'loading' : ''}}" 
+      bindtap="chooseImage"
+      disabled="{{loading}}"
+    >
+      {{loading ? '处理中...' : (uploadedImage ? '重新上传' : '上传图片')}}
+    </button>
+    
+    <button 
+      wx:if="{{uploadedImage}}"
+      class="composite-btn"
+      bindtap="startComposite"
+      disabled="{{loading}}"
+    >
+      开始合成
+    </button>
   </view>
 </view>
