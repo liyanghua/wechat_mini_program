@@ -5,9 +5,10 @@
     "pages/customize/customize"
   ],
   "window": {
-    "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#fff",
     "navigationBarTitleText": "商品定制",
+    "enablePullDownRefresh": true,
+    "backgroundTextStyle": "dark",
     "navigationBarTextStyle": "black"
   },
   "tabBar": {
