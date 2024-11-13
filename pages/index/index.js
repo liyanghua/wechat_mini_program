@@ -4,10 +4,18 @@ Page({
     products: [
       {
         id: 1,
-        name: "定制情侣T恤",
-        desc: "双面印制 纯棉面料",
+        name: "定制相框",
+        desc: "定制永恒",
         price: 99,
-        image: "/images/products/tshirt1.png",
+        image: "/images/products/相框/原图.png",
+        originalImage: "/images/products/相框/原图.png",
+        maskImage: "/images/products/相框/蒙版.png",
+        printArea: {
+          x: 0.3,
+          y: 0.2,
+          width: 0.4,
+          height: 0.4
+        },
         sales: 2341
       },
       {
@@ -15,15 +23,31 @@ Page({
         name: "个性手机壳",
         desc: "DIY照片定制 全包边保护",
         price: 39.9,
-        image: "/images/products/phonecase1.png",
+        image: "/images/products/手机壳/原图.png",
+        originalImage: "/images/products/手机壳/原图.png",
+        maskImage: "/images/products/手机壳/蒙版.png",
+        printArea: {
+          x: 0.3,
+          y: 0.2,
+          width: 0.4,
+          height: 0.4
+        },
         sales: 1678
       },
       {
         id: 3,
-        name: "照片马克杯",
-        desc: "陶瓷材质 多区域打印",
+        name: "拼图",
+        desc: "拼出你的精彩",
         price: 49.9,
-        image: "/images/products/mug1.png",
+        image: "/images/products/拼图/原图.png",
+        originalImage: "/images/products/拼图/原图.png",
+        maskImage: "/images/products/拼图/蒙版.png",
+        printArea: {
+          x: 0.3,
+          y: 0.2,
+          width: 0.4,
+          height: 0.4
+        },
         sales: 999
       },
       {
@@ -31,7 +55,15 @@ Page({
         name: "帆布包定制",
         desc: "环保面料 大容量",
         price: 79.9,
-        image: "/images/products/bag1.png",
+        image: "/images/products/帆布包/原图.jpg",
+        originalImage: "/images/products/帆布包/原图.jpg",
+        maskImage: "/images/products/帆布包/蒙版.png",
+        printArea: {
+          x: 0.3,
+          y: 0.2,
+          width: 0.4,
+          height: 0.4
+        },
         sales: 876
       }
     ],
