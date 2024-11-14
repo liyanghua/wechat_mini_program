@@ -28,6 +28,43 @@ Page({
       opacity: 0.95    // 默认透明度
     }
   },
+
+// 计算填充参数
+  calculateFillParameters(imageWidth, imageHeight, maskWidth, maskHeight) {
+    console.log('计算填充参数:', {
+      图片尺寸: { width: imageWidth, height: imageHeight },
+      蒙版尺寸: { width: maskWidth, height: maskHeight }
+    })
+
+    // 计算两个方向的缩放比例
+    const scaleX = maskWidth / imageWidth
+    const scaleY = maskHeight / imageHeight
+
+    // 选择较大的缩放比例，确保完全覆盖
+    const scale = Math.max(scaleX, scaleY)
+    
+    // 计算缩放后的尺寸
+    const scaledWidth = imageWidth * scale
+    const scaledHeight = imageHeight * scale
+
+    // 计算居中位置
+    const x = (maskWidth - scaledWidth) / 2
+    const y = (maskHeight - scaledHeight) / 2
+
+    const result = {
+      scale,
+      width: scaledWidth,
+      height: scaledHeight,
+      x,
+      y,
+      originalRatio: imageWidth / imageHeight,
+      maskRatio: maskWidth / maskHeight
+    }
+
+    console.log('填充参数计算结果:', result)
+    return result
+  },
+
 // 获取蒙版图片的打印区域（白色区域）
 async analyzePrintArea(maskImage) {
   try {
@@ -518,14 +555,38 @@ async startComposite() {
     })
     const tempCtx = tempCanvas.getContext('2d')
 
-    // 2. 加载所需图片
+    // 2. 加载所需图片:用户上传的图片和蒙版图片。
+    // 提示：可以将蒙版图片缓冲提示性能
     const [userImage, maskImage] = await Promise.all([
       this.loadImageToCanvas(this.data.uploadedImage, tempCanvas),
       this.loadImageToCanvas(this.data.product.maskImage, tempCanvas)
     ])
 
+     // 3. 分析蒙版尺寸（可以缓存结果避免重复计算）
+     const maskAnalysis = await this.analyzeMaskSize(maskImage)
+     console.log('蒙版分析结果:', maskAnalysis)
+     // 计算填充参数
+     const fillParams = this.calculateFillParameters(
+      userImage.width,
+      userImage.height,
+      maskAnalysis.width,
+      maskAnalysis.height
+    )
+    // 绘制填充区域的用户图片
+    tempCtx.save()
+    tempCtx.translate(maskAnalysis.x, maskAnalysis.y)
+    tempCtx.drawImage(
+      userImage,
+      fillParams.x,
+      fillParams.y,
+      fillParams.width,
+      fillParams.height
+    )
+    tempCtx.restore()
+
     // 3. 分析打印区域(这个函数有BUG，如果蒙版图带了非黑色线条)
-    if (this.data.scaleOptions.enabled) {
+    //if (this.data.scaleOptions.enabled) {
+    if (0) {
       const printArea = await this.analyzePrintArea(maskImage)
       const fitResult = this.calculatePrintAreaFit(
         userImage.width,
@@ -570,11 +631,7 @@ async startComposite() {
       }
     } 
     
-
-    // 保存用户图片绘制结果
-    const tiledImagePath = await this.saveCanvasToFile(tempCanvas, 'tiled_image')
     this.setData({
-      'debugImages.tiledImage': tiledImagePath,
       debugText: '用户图片绘制完成'
     })
 
@@ -592,11 +649,7 @@ async startComposite() {
     // 绘制原图
     const originalImage = await this.loadImageToCanvas(this.data.product.originalImage, this.canvas)
     this.ctx.drawImage(originalImage, 0, 0, this.data.canvasWidth, this.data.canvasHeight)
-
-    // 保存第三步结果：原图
-    const originalImagePath = await this.saveCanvasToFile(this.canvas, 'original_base')
     this.setData({
-      'debugImages.originalBase': originalImagePath,
       debugText: '原图绘制完成'
     })
 
@@ -617,21 +670,13 @@ async startComposite() {
       this.ctx.drawImage(tempCanvas, 0, 0)
     }
   
-   
    // 恢复默认设置
    this.ctx.globalAlpha = 1
    this.ctx.globalCompositeOperation = 'source-over'
 
-
-    // 保存最终结果
-    const finalImagePath = await this.saveCanvasToFile(this.canvas, 'final_result')
     this.setData({
-      'debugImages.finalResult': finalImagePath,
-      previewImage: finalImagePath,
       debugText: '合成完成'
     })
-
-    console.log('图片合成完成，调试图片路径:', this.data.debugImages)
 
   } catch (error) {
     console.error('合成失败:', error)
@@ -647,6 +692,59 @@ async startComposite() {
   }
 },
 
+// 分析蒙版尺寸, 确保蒙版是白色，如果类似拼图那种效果。需要修改逻辑
+async analyzeMaskSize(maskImage) {
+  try {
+    const tempCanvas = wx.createOffscreenCanvas({
+      type: '2d',
+      width: this.data.canvasWidth,
+      height: this.data.canvasHeight
+    })
+    const tempCtx = tempCanvas.getContext('2d')
+
+    // 绘制蒙版
+    tempCtx.drawImage(maskImage, 0, 0, this.data.canvasWidth, this.data.canvasHeight)
+    
+    // 获取像素数据
+    const imageData = tempCtx.getImageData(0, 0, this.data.canvasWidth, this.data.canvasHeight)
+    const data = imageData.data
+
+    // 找到白色区域的边界
+    let minX = this.data.canvasWidth
+    let minY = this.data.canvasHeight
+    let maxX = 0
+    let maxY = 0
+
+    for (let y = 0; y < this.data.canvasHeight; y++) {
+      for (let x = 0; x < this.data.canvasWidth; x++) {
+        const idx = (y * this.data.canvasWidth + x) * 4
+        // 检查白色像素
+        if (data[idx] > 240 && data[idx + 1] > 240 && data[idx + 2] > 240) {
+          minX = Math.min(minX, x)
+          minY = Math.min(minY, y)
+          maxX = Math.max(maxX, x)
+          maxY = Math.max(maxY, y)
+        }
+      }
+    }
+
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY
+    }
+  } catch (error) {
+    console.error('分析蒙版尺寸失败:', error)
+    // 返回默认值
+    return {
+      x: 0,
+      y: 0,
+      width: this.data.canvasWidth,
+      height: this.data.canvasHeight
+    }
+  }
+},
 // 切换混合模式
 toggleBlendMode() {
   const newMode = this.data.blendOptions.mode === 'normal' ? 'multiply' : 'normal'

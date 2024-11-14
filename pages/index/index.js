@@ -65,6 +65,22 @@ Page({
           height: 0.4
         },
         sales: 876
+      },
+      {
+        id: 5,
+        name: "扇子定制",
+        desc: "环保面料 大容量",
+        price: 79.9,
+        image: "/images/products/扇子/646798296318/原图.png",
+        originalImage: "/images/products/扇子/646798296318/原图.png",
+        maskImage: "/images/products/扇子/646798296318/蒙版.png",
+        printArea: {
+          x: 0.3,
+          y: 0.2,
+          width: 0.4,
+          height: 0.4
+        },
+        sales: 876
       }
     ],
     loading: false,
