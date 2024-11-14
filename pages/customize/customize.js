@@ -20,8 +20,12 @@ Page({
     printAreaConfig: null,  // 存储打印区域的配置
     scaleOptions: {
       enabled: true,       // 是否启用智能缩放
-      maxScaleRatio: 100,    // 最大缩放比例阈值
+      maxScaleRatio: 0.1,    // 最大缩放比例阈值
       debugEnabled: true   // 是否显示调试信息
+    },
+    blendOptions: {
+      mode: 'normal',  // 'normal' | 'multiply'
+      opacity: 0.95    // 默认透明度
     }
   },
 // 获取蒙版图片的打印区域（白色区域）
@@ -520,7 +524,7 @@ async startComposite() {
       this.loadImageToCanvas(this.data.product.maskImage, tempCanvas)
     ])
 
-    // 3. 分析打印区域
+    // 3. 分析打印区域(这个函数有BUG，如果蒙版图带了非黑色线条)
     if (this.data.scaleOptions.enabled) {
       const printArea = await this.analyzePrintArea(maskImage)
       const fitResult = this.calculatePrintAreaFit(
@@ -535,6 +539,8 @@ async startComposite() {
         适应结果: fitResult
       })
 
+      console.log("缩放比例：", fitResult.scaleRatio)
+      console.log("缩放比例设置：", this.data.scaleOptions.maxScaleRatio)
       // 检查是否超过最大缩放比例
       if (fitResult.scaleRatio > this.data.scaleOptions.maxScaleRatio) {
         console.log('缩放比例超过阈值，使用普通适应模式')
@@ -562,22 +568,8 @@ async startComposite() {
           fitResult.drawHeight
         )
       }
-    } else {
-      // 使用原来的适应模式
-      const normalFit = this.calculateImageFit(
-        userImage.width,
-        userImage.height,
-        this.data.canvasWidth,
-        this.data.canvasHeight
-      )
-      tempCtx.drawImage(
-        userImage,
-        normalFit.drawX,
-        normalFit.drawY,
-        normalFit.drawWidth,
-        normalFit.drawHeight
-      )
-    }
+    } 
+    
 
     // 保存用户图片绘制结果
     const tiledImagePath = await this.saveCanvasToFile(tempCanvas, 'tiled_image')
@@ -590,13 +582,6 @@ async startComposite() {
     tempCtx.globalCompositeOperation = 'destination-in'
     tempCtx.drawImage(maskImage, 0, 0, this.data.canvasWidth, this.data.canvasHeight)
 
-
-    // 保存第二步结果：应用蒙版后的效果
-    const maskedImagePath = await this.saveCanvasToFile(tempCanvas, 'masked_image')
-    this.setData({
-      'debugImages.maskedImage': maskedImagePath,
-      debugText: '蒙版应用完成'
-    })
 
     // 5. 在主画布上合成最终效果
     this.setData({ debugText: '开始最终合成' })
@@ -615,13 +600,26 @@ async startComposite() {
       debugText: '原图绘制完成'
     })
 
-   // 调整叠加方式，让用户图片更突出
-   this.ctx.globalCompositeOperation = 'source-over'  // 使用正常叠加模式
-   this.ctx.globalAlpha = 0.95  // 设置非常小的透明度，让用户图片更突出
-   this.ctx.drawImage(tempCanvas, 0, 0, this.data.canvasWidth, this.data.canvasHeight)
+    // 7. 根据选择的混合模式合成
+    if (this.data.blendOptions.mode === 'multiply') {
+      // 正片叠底效果
+      this.ctx.globalCompositeOperation = 'multiply'
+      this.ctx.drawImage(tempCanvas, 0, 0)
+      
+      // 再次叠加一次原图以增强效果
+      this.ctx.globalCompositeOperation = 'overlay'
+      this.ctx.globalAlpha = 0.9
+      this.ctx.drawImage(originalImage, 0, 0, this.data.canvasWidth, this.data.canvasHeight)
+    } else {
+      // 普通叠加
+      this.ctx.globalCompositeOperation = 'source-over'
+      this.ctx.globalAlpha = this.data.blendOptions.opacity
+      this.ctx.drawImage(tempCanvas, 0, 0)
+    }
+  
    
    // 恢复默认设置
-   this.ctx.globalAlpha = 1.0
+   this.ctx.globalAlpha = 1
    this.ctx.globalCompositeOperation = 'source-over'
 
 
@@ -647,6 +645,18 @@ async startComposite() {
   } finally {
     this.setData({ loading: false })
   }
+},
+
+// 切换混合模式
+toggleBlendMode() {
+  const newMode = this.data.blendOptions.mode === 'normal' ? 'multiply' : 'normal'
+  this.setData({
+    'blendOptions.mode': newMode
+  }, () => {
+    if (this.data.uploadedImage) {
+      this.startComposite() // 重新合成
+    }
+  })
 },
 
 // 添加计算图片适应尺寸的方法

@@ -87,23 +87,36 @@
     ></image>
   </view>
 
-  <!-- 操作按钮 -->
-  <view class="action-section">
-    <button 
-      class="upload-btn {{loading ? 'loading' : ''}}" 
-      bindtap="chooseImage"
+<!-- 在操作区域上方添加混合模式选项 -->
+<view class="blend-options" wx:if="{{uploadedImage}}">
+  <view class="option-item">
+    <switch 
+      bindchange="toggleBlendMode" 
+      checked="{{blendOptions.mode === 'multiply'}}"
       disabled="{{loading}}"
-    >
-      {{loading ? '处理中...' : (uploadedImage ? '重新上传' : '上传图片')}}
-    </button>
-    
-    <button 
-      wx:if="{{uploadedImage}}"
-      class="composite-btn"
-      bindtap="startComposite"
-      disabled="{{loading}}"
-    >
-      开始合成
-    </button>
+    />
+    <text class="option-label">保留产品纹理</text>
+    <text class="option-desc">适用于布料、皮革等材质</text>
   </view>
+</view>
+
+  <!-- 修改操作按钮区域 -->
+<view class="action-section">
+  <button 
+    class="upload-btn {{loading ? 'loading' : ''}}" 
+    bindtap="chooseImage"
+    disabled="{{loading}}"
+  >
+    {{loading ? '处理中...' : (uploadedImage ? '重新上传' : '上传图片')}}
+  </button>
+  
+  <button 
+    wx:if="{{uploadedImage}}"
+    class="composite-btn"
+    bindtap="startComposite"
+    disabled="{{loading}}"
+  >
+    重新合成
+  </button>
+</view>
 </view>
