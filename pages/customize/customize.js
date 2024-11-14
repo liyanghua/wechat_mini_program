@@ -16,8 +16,110 @@ Page({
       maskedImage: '',
       originalBase: '',
       finalResult: ''
+    },
+    printAreaConfig: null,  // 存储打印区域的配置
+    scaleOptions: {
+      enabled: true,       // 是否启用智能缩放
+      maxScaleRatio: 100,    // 最大缩放比例阈值
+      debugEnabled: true   // 是否显示调试信息
     }
   },
+// 获取蒙版图片的打印区域（白色区域）
+async analyzePrintArea(maskImage) {
+  try {
+    console.log('开始分析打印区域')
+    const tempCanvas = wx.createOffscreenCanvas({
+      type: '2d',
+      width: this.data.canvasWidth,
+      height: this.data.canvasHeight
+    })
+    const tempCtx = tempCanvas.getContext('2d')
+
+    // 绘制蒙版图片
+    tempCtx.drawImage(maskImage, 0, 0, this.data.canvasWidth, this.data.canvasHeight)
+    
+    // 获取图片数据
+    const imageData = tempCtx.getImageData(0, 0, this.data.canvasWidth, this.data.canvasHeight)
+    const data = imageData.data
+
+    // 分析白色区域的边界
+    let minX = this.data.canvasWidth
+    let minY = this.data.canvasHeight
+    let maxX = 0
+    let maxY = 0
+    let hasWhitePixel = false
+
+    // 遍历像素查找白色区域
+    for (let y = 0; y < this.data.canvasHeight; y++) {
+      for (let x = 0; x < this.data.canvasWidth; x++) {
+        const idx = (y * this.data.canvasWidth + x) * 4
+        // 检查是否为白色像素 (R=255, G=255, B=255)
+        if (data[idx] > 250 && data[idx + 1] > 250 && data[idx + 2] > 250) {
+          hasWhitePixel = true
+          minX = Math.min(minX, x)
+          minY = Math.min(minY, y)
+          maxX = Math.max(maxX, x)
+          maxY = Math.max(maxY, y)
+        }
+      }
+    }
+
+    if (!hasWhitePixel) {
+      throw new Error('未检测到打印区域')
+    }
+
+    // 计算打印区域的尺寸
+    const printArea = {
+      x: minX,
+      y: minY,
+      width: maxX - minX + 1,
+      height: maxY - minY + 1
+    }
+
+    console.log('打印区域分析结果:', printArea)
+    return printArea
+
+  } catch (error) {
+    console.error('分析打印区域失败:', error)
+    throw error
+  }
+},
+
+// 计算图片在打印区域内的适应尺寸
+calculatePrintAreaFit(imgWidth, imgHeight, printArea) {
+  const imageRatio = imgWidth / imgHeight
+  const printAreaRatio = printArea.width / printArea.height
+  
+  let scale, drawWidth, drawHeight, drawX, drawY
+
+  if (imageRatio > printAreaRatio) {
+    // 图片较宽，以打印区域宽度为准
+    drawWidth = printArea.width
+    drawHeight = drawWidth / imageRatio
+    drawX = printArea.x
+    drawY = printArea.y + (printArea.height - drawHeight) / 2
+    scale = printArea.width / imgWidth
+  } else {
+    // 图片较高，以打印区域高度为准
+    drawHeight = printArea.height
+    drawWidth = drawHeight * imageRatio
+    drawX = printArea.x + (printArea.width - drawWidth) / 2
+    drawY = printArea.y
+    scale = printArea.height / imgHeight
+  }
+
+  // 计算缩放比例
+  const scaleRatio = Math.max(imgWidth / drawWidth, imgHeight / drawHeight)
+
+  return {
+    drawX,
+    drawY,
+    drawWidth,
+    drawHeight,
+    scale,
+    scaleRatio
+  }
+},
 
   onLoad(options) {
     console.log('====== onLoad开始 ======')
@@ -404,7 +506,7 @@ async startComposite() {
       debugText: '开始合成图片'
     })
 
-    // 1. 创建临时画布处理用户图片和蒙版
+    // 1. 创建临时画布
     const tempCanvas = wx.createOffscreenCanvas({
       type: '2d',
       width: this.data.canvasWidth,
@@ -418,38 +520,76 @@ async startComposite() {
       this.loadImageToCanvas(this.data.product.maskImage, tempCanvas)
     ])
 
-    // 3. 在临时画布上绘制用户图片（修改这部分）
-    this.setData({ debugText: '绘制用户图片' })
-    tempCtx.clearRect(0, 0, this.data.canvasWidth, this.data.canvasHeight)
-    
-    // 计算图片绘制参数，保持比例填充整个画布
-    const { drawX, drawY, drawWidth, drawHeight } = this.calculateImageFit(
-      userImage.width,
-      userImage.height,
-      this.data.canvasWidth,
-      this.data.canvasHeight
-    )
+    // 3. 分析打印区域
+    if (this.data.scaleOptions.enabled) {
+      const printArea = await this.analyzePrintArea(maskImage)
+      const fitResult = this.calculatePrintAreaFit(
+        userImage.width,
+        userImage.height,
+        printArea
+      )
 
-    // 绘制用户图片
-    tempCtx.drawImage(
-      userImage,
-      drawX,
-      drawY,
-      drawWidth,
-      drawHeight
-    )
+      console.log('缩放计算结果:', {
+        原始尺寸: { 宽: userImage.width, 高: userImage.height },
+        打印区域: printArea,
+        适应结果: fitResult
+      })
 
-    // 保存第一步结果
+      // 检查是否超过最大缩放比例
+      if (fitResult.scaleRatio > this.data.scaleOptions.maxScaleRatio) {
+        console.log('缩放比例超过阈值，使用普通适应模式')
+        // 使用普通的适应模式
+        const normalFit = this.calculateImageFit(
+          userImage.width,
+          userImage.height,
+          this.data.canvasWidth,
+          this.data.canvasHeight
+        )
+        tempCtx.drawImage(
+          userImage,
+          normalFit.drawX,
+          normalFit.drawY,
+          normalFit.drawWidth,
+          normalFit.drawHeight
+        )
+      } else {
+        // 使用打印区域适应
+        tempCtx.drawImage(
+          userImage,
+          fitResult.drawX,
+          fitResult.drawY,
+          fitResult.drawWidth,
+          fitResult.drawHeight
+        )
+      }
+    } else {
+      // 使用原来的适应模式
+      const normalFit = this.calculateImageFit(
+        userImage.width,
+        userImage.height,
+        this.data.canvasWidth,
+        this.data.canvasHeight
+      )
+      tempCtx.drawImage(
+        userImage,
+        normalFit.drawX,
+        normalFit.drawY,
+        normalFit.drawWidth,
+        normalFit.drawHeight
+      )
+    }
+
+    // 保存用户图片绘制结果
     const tiledImagePath = await this.saveCanvasToFile(tempCanvas, 'tiled_image')
     this.setData({
       'debugImages.tiledImage': tiledImagePath,
       debugText: '用户图片绘制完成'
     })
 
-    // 4. 应用蒙版（保持不变）
-    this.setData({ debugText: '应用蒙版' })
+    // 4. 应用蒙版
     tempCtx.globalCompositeOperation = 'destination-in'
     tempCtx.drawImage(maskImage, 0, 0, this.data.canvasWidth, this.data.canvasHeight)
+
 
     // 保存第二步结果：应用蒙版后的效果
     const maskedImagePath = await this.saveCanvasToFile(tempCanvas, 'masked_image')
