@@ -47,6 +47,8 @@ Page({
     const scaledWidth = imageWidth * scale
     const scaledHeight = imageHeight * scale
 
+    console.log("缩放后的尺寸：", scaledWidth, scaledHeight);
+
     // 计算居中位置
     const x = (maskWidth - scaledWidth) / 2
     const y = (maskHeight - scaledHeight) / 2
@@ -132,9 +134,16 @@ calculatePrintAreaFit(imgWidth, imgHeight, printArea) {
   const printAreaRatio = printArea.width / printArea.height
   
   let scale, drawWidth, drawHeight, drawX, drawY
+  console.log("图片宽度：", imgWidth)
+  console.log("打印宽度：", printArea.width)
+  console.log("图片高度：", imgHeight)
+  console.log("打印高度", printArea.height)
+  console.log("imageRatio：", imageRatio)
+  console.log("printAreaRatio:", printAreaRatio)
 
   if (imageRatio > printAreaRatio) {
     // 图片较宽，以打印区域宽度为准
+   
     drawWidth = printArea.width
     drawHeight = drawWidth / imageRatio
     drawX = printArea.x
@@ -146,6 +155,7 @@ calculatePrintAreaFit(imgWidth, imgHeight, printArea) {
     drawWidth = drawHeight * imageRatio
     drawX = printArea.x + (printArea.width - drawWidth) / 2
     drawY = printArea.y
+    console.log("调整绘制坐标（x,y)", drawX,drawY);
     scale = printArea.height / imgHeight
   }
 
@@ -565,6 +575,11 @@ async startComposite() {
      // 3. 分析蒙版尺寸（可以缓存结果避免重复计算）
      const maskAnalysis = await this.analyzeMaskSize(maskImage)
      console.log('蒙版分析结果:', maskAnalysis)
+     let autofit = 0
+     if (maskAnalysis.width < userImage.width ||  maskAnalysis.height < userImage.height) {
+        console.log("蒙版区域过小，需要重新绘制")
+        autofit = 1
+     }
      // 计算填充参数
      const fillParams = this.calculateFillParameters(
       userImage.width,
@@ -575,6 +590,11 @@ async startComposite() {
     // 绘制填充区域的用户图片
     tempCtx.save()
     tempCtx.translate(maskAnalysis.x, maskAnalysis.y)
+    console.log("绘制区域填充：")
+    console.log("x=", fillParams.x)
+    console.log("y=", fillParams.y)
+    console.log("width=", fillParams.width)
+    console.log("height=", fillParams.height)
     tempCtx.drawImage(
       userImage,
       fillParams.x,
@@ -612,6 +632,12 @@ async startComposite() {
           this.data.canvasWidth,
           this.data.canvasHeight
         )
+
+        console.log("普通适应模式:")
+      console.log("x=", normalFit.drawX)
+      console.log("y=", normalFit.drawY)
+      console.log("width=", normalFit.drawWidth)
+      console.log("height=", normalFit.drawHeight)
         tempCtx.drawImage(
           userImage,
           normalFit.drawX,
@@ -621,6 +647,7 @@ async startComposite() {
         )
       } else {
         // 使用打印区域适应
+        console.log("打印区域自适应");
         tempCtx.drawImage(
           userImage,
           fitResult.drawX,
