@@ -20,6 +20,7 @@
       "outputPath": ""
     }
   },
+  "useIsolateContext": false,
   "condition": {},
   "editorSetting": {
     "tabIndent": "insertSpaces",
