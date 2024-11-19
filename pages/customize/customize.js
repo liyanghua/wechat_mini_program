@@ -3,6 +3,8 @@ Page({
   data: {
     product: null,
     canvasWidth: 0,
+    minPrice: 0,
+    propertyList: [],
     canvasHeight: 0,
     debugText: '页面开始加载',
     imageInfo: null,      // 原图信息
@@ -190,7 +192,16 @@ calculatePrintAreaFit(imgWidth, imgHeight, printArea) {
       // 解析商品信息
       const product = JSON.parse(decodeURIComponent(options.productInfo))
       console.log('商品信息:', product)
+      // 处理价格
+      const minPrice = product.price
       
+      // 处理属性列表
+      const propertyList = this.formatProperties(product)
+      console.log("商品属性：", propertyList);
+
+       // 处理并排序详情图片
+       const detailImages = this.sortDetailImages(product.mediaInfo?.detailImages || [])
+
       // 获取系统信息
       const systemInfo = wx.getSystemInfoSync()
       const canvasWidth = systemInfo.windowWidth
@@ -198,6 +209,9 @@ calculatePrintAreaFit(imgWidth, imgHeight, printArea) {
       this.setData({
         product,
         canvasWidth,
+        minPrice,
+        propertyList,
+        detailImages,
         debugText: '基础信息设置完成'
       })
 
@@ -211,6 +225,81 @@ calculatePrintAreaFit(imgWidth, imgHeight, printArea) {
       })
     }
   },
+// 排序详情图片
+sortDetailImages(images) {
+  return images.sort((a, b) => {
+    // 从路径中提取文件名
+    const fileNameA = a.split('/').pop()
+    const fileNameB = b.split('/').pop()
+    
+    // 提取数字
+    const numA = this.extractNumber(fileNameA)
+    const numB = this.extractNumber(fileNameB)
+    
+    console.log('排序比较:', {
+      fileNameA,
+      fileNameB,
+      numA,
+      numB
+    })
+
+    // 如果都有数字，按数字排序
+    if (numA !== null && numB !== null) {
+      return numA - numB
+    }
+    
+    // 如果只有一个有数字，有数字的排前面
+    if (numA !== null) return -1
+    if (numB !== null) return 1
+    
+    // 都没有数字，按文件名排序
+    return fileNameA.localeCompare(fileNameB)
+  })
+},
+
+// 从文件名中提取数字
+extractNumber(fileName) {
+  // 匹配文件名中的数字
+  // 支持以下格式：
+  // - detail1.jpg
+  // - detail_1.jpg
+  // - detail-1.jpg
+  // - 1.jpg
+  const match = fileName.match(/\d+/)
+  return match ? parseInt(match[0]) : null
+},
+  // 格式化商品属性
+  formatProperties(product) {
+    // 需要排除的属性（已经单独展示的）
+    const excludeKeys = ['id', 'title', 'shipping', 'sales', 'skus', 'originalImage', 'maskImage', 'printArea', 'mediaInfo']
+    
+    const propertyList = []
+    
+    // 属性标签映射
+    const labelMap = {
+      'material': '材质',
+      'size': '尺码',
+      'shape': '颜色',
+      'style': '款式',
+      // 可以添加更多映射
+    }
+
+    for (const [key, value] of Object.entries(product.properties)) {
+      if (!excludeKeys.includes(key) && 
+          typeof value === 'string' && 
+          value.trim() && 
+          !key.startsWith('_')) {
+        propertyList.push({
+          key,
+          label: labelMap[key] || key,
+          value: value.trim()
+        })
+      }
+    }
+
+    return propertyList
+  },
+
 
   // 初始化Canvas并加载原图
   async initCanvasAndImage() {

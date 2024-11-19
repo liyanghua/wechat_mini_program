@@ -1,33 +1,77 @@
 <!-- pages/customize/customize.wxml -->
 <view class="container">
-  <!-- 调试信息显示 -->
-  <view class="debug-info">
-    <text class="debug-text">调试信息：{{debugText}}</text>
-    
-    <!-- 原图信息 -->
-    <view wx:if="{{imageInfo}}" class="image-info">
-      <text class="info-title">原图信息:</text>
-      <text>尺寸: {{imageInfo.width}} x {{imageInfo.height}}</text>
-      <text>路径: {{product.originalImage}}</text>
-    </view>
-    
-    <!-- 上传图片信息 -->
-    <view wx:if="{{uploadedImageInfo}}" class="image-info">
-      <text class="info-title">上传图片信息:</text>
-      <text>原始尺寸: {{uploadedImageInfo.width}} x {{uploadedImageInfo.height}}</text>
-      <text wx:if="{{uploadedImageInfo.drawParams}}">绘制位置: ({{uploadedImageInfo.drawParams.x}}, {{uploadedImageInfo.drawParams.y}})</text>
-      <text wx:if="{{uploadedImageInfo.drawParams}}">绘制尺寸: {{uploadedImageInfo.drawParams.width}} x {{uploadedImageInfo.drawParams.height}}</text>
-    </view>
-  </view>
 
-  <!-- Canvas区域 -->
-  <view class="canvas-container">
+<!-- Canvas区域 -->
+<view class="canvas-container">
     <canvas 
       type="2d" 
       id="customCanvas"
       style="width: {{canvasWidth}}px; height: {{canvasHeight}}px;"
     ></canvas>
   </view>
+  
+
+  <!-- 商品基本信息区域 -->
+  <view class="product-info-section">
+    <!-- 价格区域 -->
+    <view class="price-section">
+      <text class="price">¥{{minPrice}}</text>
+      <text class="price-label">起</text>
+      <view class="sale-info" wx:if="{{product.sales}}">
+        <text class="sale-count">销量 {{product.sales}}</text>
+      </view>
+    </view>
+
+    <!-- 标题区域 -->
+    <view class="title-section">
+      <text class="title">{{product.title}}</text>
+    </view>
+
+    <!-- 发货信息 -->
+    <view class="shipping-section">
+      <view class="shipping-item">
+        <view class="shipping-label">发货</view>
+        <view class="shipping-value">{{product.shipping}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 商品属性区域 -->
+  <view class="properties-section" wx:if="{{propertyList.length > 0}}">
+    <view class="section-title">商品参数</view>
+    <view class="properties-list">
+      <view 
+        class="property-item"
+        wx:for="{{propertyList}}"
+        wx:key="key"
+      >
+        <text class="property-label">{{item.label}}</text>
+        <text class="property-value">{{item.value}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="detail-section">
+  <view class="section-title">详情展示</view>
+  <view class="detail-images">
+    <block wx:if="{{detailImages.length > 0}}">
+      <image 
+        wx:for="{{detailImages}}"
+        wx:key="*this"
+        src="{{item}}"
+        mode="widthFix"
+        class="detail-image"
+        lazy-load
+        data-index="{{index}}"
+      />
+    </block>
+    <view wx:else class="no-detail">
+      暂无详情图片
+    </view>
+  </view>
+</view>
+
+  
 
   <!-- 调试图片显示 -->
   <view class="debug-images" wx:if="{{debugImages}}">
@@ -119,4 +163,5 @@
     重新合成
   </button>
 </view>
+
 </view>

@@ -6,7 +6,7 @@ Page({
     products: [], // 处理后的商品数据
     loading: true,
     currentPage: 1,
-    pageSize: 3,
+    pageSize: 10,
     hasMore: true,
     swiperDuration: 2000, // 轮播间隔，5秒
   },
@@ -137,13 +137,17 @@ Page({
       originalImage: product.originalImage || product.images[0],
       maskImage: product.maskImage,
       printArea: product.printArea,
-      price: product.skus[0]?.price,
+      price: product.price,
       properties: {
         title: product.name,
         shipping: product.shipping,
         material: product.material,
-        size: product.size
-      }
+        size: product.size,
+        shape:product.shape,
+        tech:product.tech,
+        style:product.style
+      },
+      mediaInfo: product.mediaInfo
     }
 
     wx.navigateTo({
