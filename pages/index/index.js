@@ -147,7 +147,8 @@ Page({
         tech:product.tech,
         style:product.style
       },
-      mediaInfo: product.mediaInfo
+      mediaInfo: product.mediaInfo,
+      skus:product.skus
     }
 
     wx.navigateTo({

@@ -6,6 +6,11 @@ Page({
     minPrice: 0,
     propertyList: [],
     canvasHeight: 0,
+    showSkuSelector: false,
+    selectedSkuIndex: null,
+    selectedSku: null,
+    mainImage: '', // 当前显示的主图
+    currentPrice: 0, // 当前选中的价格
     debugText: '页面开始加载',
     imageInfo: null,      // 原图信息
     uploadedImageInfo: null, // 用户上传图片信息
@@ -197,11 +202,8 @@ calculatePrintAreaFit(imgWidth, imgHeight, printArea) {
       
       // 处理属性列表
       const propertyList = this.formatProperties(product)
-      console.log("商品属性：", propertyList);
-
        // 处理并排序详情图片
        const detailImages = this.sortDetailImages(product.mediaInfo?.detailImages || [])
-
       // 获取系统信息
       const systemInfo = wx.getSystemInfoSync()
       const canvasWidth = systemInfo.windowWidth
@@ -212,6 +214,8 @@ calculatePrintAreaFit(imgWidth, imgHeight, printArea) {
         minPrice,
         propertyList,
         detailImages,
+        mainImage: product.originalImage,
+        currentPrice: minPrice,
         debugText: '基础信息设置完成'
       })
 
@@ -235,13 +239,7 @@ sortDetailImages(images) {
     // 提取数字
     const numA = this.extractNumber(fileNameA)
     const numB = this.extractNumber(fileNameB)
-    
-    console.log('排序比较:', {
-      fileNameA,
-      fileNameB,
-      numA,
-      numB
-    })
+  
 
     // 如果都有数字，按数字排序
     if (numA !== null && numB !== null) {
@@ -807,7 +805,41 @@ async startComposite() {
     this.setData({ loading: false })
   }
 },
+// 打开SKU选择器
+openSkuSelector() {
+  this.setData({ showSkuSelector: true })
+},
 
+// 关闭SKU选择器
+closeSkuSelector() {
+  this.setData({ showSkuSelector: false })
+},
+
+// 选择SKU
+selectSku(e) {
+  const { index } = e.currentTarget.dataset
+  const selectedSku = this.data.product.skus[index]
+  
+  this.setData({
+    selectedSkuIndex: index,
+    selectedSku: selectedSku,
+    mainImage: selectedSku.path,
+    currentPrice: selectedSku.price
+  })
+},
+
+// 确认SKU选择
+confirmSku() {
+  if (!this.data.selectedSku) {
+    wx.showToast({
+      title: '请选择规格',
+      icon: 'none'
+    })
+    return
+  }
+
+  this.setData({ showSkuSelector: false })
+},
 // 分析蒙版尺寸, 确保蒙版是白色，如果类似拼图那种效果。需要修改逻辑
 async analyzeMaskSize(maskImage) {
   try {
@@ -969,6 +1001,26 @@ async clearTempFiles() {
   } catch (error) {
     console.error('清理临时文件失败:', error)
   }
+},
+// 开始定制
+startCustomize() {
+  if (!this.data.selectedSku) {
+    this.openSkuSelector()
+    return
+  }
+
+  const customizeData = {
+    productId: this.data.product.id,
+    sku: this.data.selectedSku,
+    price: this.data.selectedSku.price,
+    originalImage: this.data.selectedSku.path,
+    maskImage: this.data.product.maskImage,
+    printArea: this.data.product.printArea
+  }
+
+  wx.navigateTo({
+    url: `/pages/customize-design/customize-design?info=${encodeURIComponent(JSON.stringify(customizeData))}`
+  })
 },
 
 onUnload() {

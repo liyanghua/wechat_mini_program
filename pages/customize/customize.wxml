@@ -164,4 +164,76 @@
   </button>
 </view>
 
+
+<!-- 浮动操作栏 先隐藏
+<view class="floating-action-bar">
+    <button 
+      class="action-btn sku-btn"
+      bindtap="openSkuSelector"
+    >选择规格</button>
+    <button 
+      class="action-btn customize-btn"
+      bindtap="startCustomize"
+      disabled="{{!selectedSku}}"
+    >立即定制</button>
+  </view>
+  ---->
+
+<!-- SKU选择器弹窗 -->
+<view class="sku-popup {{showSkuSelector ? 'show' : ''}}">
+    <view class="popup-mask" bindtap="closeSkuSelector"></view>
+    <view class="popup-content">
+      <!-- SKU预览信息 -->
+      <view class="sku-preview">
+        <image 
+          src="{{selectedSku ? selectedSku.path : product.originalImage}}" 
+          mode="aspectFit" 
+          class="preview-image"
+        />
+        <view class="preview-info">
+          <view class="preview-price">
+            ¥{{selectedSku ? selectedSku.price : minPrice}}
+          </view>
+          <view class="preview-selected">
+            {{selectedSku ? selectedSku.sku : '请选择规格'}}
+          </view>
+        </view>
+        <view class="close-btn" bindtap="closeSkuSelector">×</view>
+      </view>
+
+      <!-- SKU列表 -->
+      <view class="sku-list">
+        <view class="sku-title">规格选择</view>
+        <view class="sku-options">
+          <view 
+            class="sku-option {{selectedSkuIndex === index ? 'selected' : ''}}"
+            wx:for="{{product.skus}}"
+            wx:key="sku"
+            bindtap="selectSku"
+            data-index="{{index}}"
+          >
+            <image 
+              src="{{item.path}}" 
+              mode="aspectFit" 
+              class="sku-image"
+              lazy-load
+            />
+            <view class="sku-info">
+              <text class="sku-name">{{item.sku}}</text>
+              <text class="sku-price">¥{{item.price}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 确认按钮 -->
+      <button 
+        class="confirm-btn {{!selectedSku ? 'disabled' : ''}}"
+        bindtap="confirmSku"
+      >
+        确定
+      </button>
+    </view>
+  </view>
+
 </view>
